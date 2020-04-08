@@ -13,7 +13,7 @@ namespace Calendar
 {
     public partial class CalendarForm : Form
     {
-        private Dictionary<string, int> numberWeekDays = new Dictionary<string, int> {
+        private Dictionary<string, int> weekDays = new Dictionary<string, int> {
             { "Monday", 0 },
             { "Tuesday", 1 },
             { "Wednesday", 2 },
@@ -29,16 +29,26 @@ namespace Calendar
             Y = 27
         }
 
-        private int totalSizePercentage = 100;
-        private int numberOfDaysOfWeek = 7;
+        private const int TotalSizePercentage = 100;
+        private const int DaysOfWeek = 7;
+        private const int InitialDayOfMonth = 1;
+        private const int GapBetweenIndexAndNumber = 1;
+        private const int DefaultSelectedListBoxIndex = -1;
+        private const int FontSizeOfNumbers = 20;
+        private const int FirstRowAndColumnIndex = 0;
+        private const int NextTimeInterval = 1;
+        private const int PreviousTimeInterval = -1;
+
+        private const string ErrorMessage = "You must select a month and a year";
+        private const string LetterFont = "Microsoft Sans Serif";
+        private const string EnglishLanguageCode = "en-EN";
+        private const string DayFormat = "dddd";
+        private const string MonthAndYearFormat = "MMMM   yyyy";
+
         private DateTime selectedDate;
-        private int numberOfDaysBetweenMondayAndFirstDayOfMonth;
-        private int numberOfDaysOfMonth;
-        private int defaultSelectedListBoxIndex = -1;
+        private int daysBetweenMondayAndFirstDayOfMonth;
+        private int daysOfMonth;
         private int[] weekendColumnIndices = { 5, 6 };
-        private int defaultDayOfMonth = 1;
-        private int gapBetweenIndexAndNumber = 1;
-        private int fontSizeOfNumbers = 20;
 
         public CalendarForm()
         {
@@ -59,40 +69,40 @@ namespace Calendar
                 isCurrentMonth = false;
             }
             monthLabel.Text = getMonthAsWord(selectedDate);
-            calendarTable.ColumnCount = numberOfDaysOfWeek;
+            calendarTable.ColumnCount = DaysOfWeek;
             int numberOfRows = getNumberOfRows(selectedDate);
             calendarTable.RowCount = numberOfRows;
-            float sizePercentageOfEachRow = totalSizePercentage / numberOfRows;
+            float sizePercentageOfEachRow = TotalSizePercentage / numberOfRows;
             calendarTable.Controls.Clear();
             calendarTable.RowStyles.Clear();
 
             bool isFirstRow;
-            int dayNumber = 1;
+            int day = InitialDayOfMonth;
             int cellNumberFromLeft;
             bool shouldBeWrittenOnCell;
 
-            for (int rowIndex = 0; rowIndex < numberOfRows; rowIndex++)
+            for (int rowIndex = FirstRowAndColumnIndex; rowIndex < numberOfRows; rowIndex++)
             {
                 calendarTable.RowStyles.Add(new RowStyle(SizeType.Percent, sizePercentageOfEachRow));
             }
 
-            for (int rowIndex = 0; rowIndex < numberOfRows; rowIndex++)
+            for (int rowIndex = FirstRowAndColumnIndex; rowIndex < numberOfRows; rowIndex++)
             {
-                if (rowIndex == 0)
+                if (rowIndex == FirstRowAndColumnIndex)
                 {
                     isFirstRow = true;
-                    cellNumberFromLeft = numberOfDaysBetweenMondayAndFirstDayOfMonth;
+                    cellNumberFromLeft = daysBetweenMondayAndFirstDayOfMonth;
                 }
                 else
                 {
                     isFirstRow = false;
-                    cellNumberFromLeft = 1;
+                    cellNumberFromLeft = GapBetweenIndexAndNumber;
                 }
 
-                for (int columnIndex = 0; columnIndex < numberOfDaysOfWeek; columnIndex++)
+                for (int columnIndex = FirstRowAndColumnIndex; columnIndex < DaysOfWeek; columnIndex++)
                 {
 
-                    if (!(isFirstRow && columnIndex < numberOfDaysBetweenMondayAndFirstDayOfMonth) && dayNumber <= numberOfDaysOfMonth)
+                    if (!(isFirstRow && columnIndex < daysBetweenMondayAndFirstDayOfMonth) && day <= daysOfMonth)
                     {
                         shouldBeWrittenOnCell = true;
                     }
@@ -101,24 +111,24 @@ namespace Calendar
                         shouldBeWrittenOnCell = false;
                     }
 
-                    Label newLabel = createLabel(cellNumberFromLeft, dayNumber, shouldBeWrittenOnCell, isCurrentMonth);
+                    Label newLabel = createLabel(cellNumberFromLeft, day, shouldBeWrittenOnCell, isCurrentMonth);
                     calendarTable.Controls.Add(newLabel);
                     cellNumberFromLeft++;
                     if (shouldBeWrittenOnCell)
                     {
-                        dayNumber++;
+                        day++;
                     }
                 }
             }
         }
 
-        private Label createLabel(int cellNumberFromLeft, int dayNumber, bool shouldBeWrittenOnCell, bool isCurrentMonth)
+        private Label createLabel(int cellNumberFromLeft, int day, bool shouldBeWrittenOnCell, bool isCurrentMonth)
         {
             Label newLabel = new Label();
             if (shouldBeWrittenOnCell)
             {
-                newLabel.Text = dayNumber.ToString();
-                if (isCurrentMonth && dayNumber == DateTime.Today.Day)
+                newLabel.Text = day.ToString();
+                if (isCurrentMonth && day == DateTime.Today.Day)
                 {
                     newLabel.BackColor = Color.LightGreen;
                 }
@@ -131,16 +141,16 @@ namespace Calendar
             newLabel.Location = new Point((int)CellDimensions.X * cellNumberFromLeft + calendarTable.Location.X, (int)CellDimensions.Y * cellNumberFromLeft + calendarTable.Location.Y);
             newLabel.Dock = DockStyle.Fill;
             newLabel.TextAlign = ContentAlignment.MiddleCenter;
-            newLabel.Font = new Font("Microsoft Sans Serif", fontSizeOfNumbers);
+            newLabel.Font = new Font(LetterFont, FontSizeOfNumbers);
             return newLabel;
         }
 
         private int getNumberOfRows(DateTime date)
         {
-            DateTime firstDayOfMonth = new DateTime(date.Year, date.Month, defaultDayOfMonth);
-            numberOfDaysOfMonth = firstDayOfMonth.AddMonths(1).AddDays(-1).Day;
-            numberOfDaysBetweenMondayAndFirstDayOfMonth = numberWeekDays[getDayOfWeekAsWord(firstDayOfMonth)];
-            return (int)Math.Ceiling((numberOfDaysOfMonth + numberOfDaysBetweenMondayAndFirstDayOfMonth) / (float)numberOfDaysOfWeek);
+            DateTime firstDayOfMonth = new DateTime(date.Year, date.Month, InitialDayOfMonth);
+            daysOfMonth = firstDayOfMonth.AddMonths(NextTimeInterval).AddDays(PreviousTimeInterval).Day;
+            daysBetweenMondayAndFirstDayOfMonth = weekDays[getDayOfWeekAsWord(firstDayOfMonth)];
+            return (int)Math.Ceiling((daysOfMonth + daysBetweenMondayAndFirstDayOfMonth) / (float)DaysOfWeek);
         }
 
         private void CalendarTable_CellPaint(object sender, TableLayoutCellPaintEventArgs e)
@@ -153,23 +163,23 @@ namespace Calendar
 
         private string getDayOfWeekAsWord(DateTime date)
         {
-            return date.ToString("dddd", new CultureInfo("en-EN"));
+            return date.ToString(DayFormat, new CultureInfo(EnglishLanguageCode));
         }
 
         private string getMonthAsWord(DateTime date)
         {
-            return date.ToString("MMMM   yyyy", new CultureInfo("en-EN"));
+            return date.ToString(MonthAndYearFormat, new CultureInfo(EnglishLanguageCode));
         }
 
         private void NextMonthButton_Click(object sender, EventArgs e)
         {
-            selectedDate = selectedDate.AddMonths(1);
+            selectedDate = selectedDate.AddMonths(NextTimeInterval);
             updateCalendar();
         }
 
         private void PreviousMonthButton_Click(object sender, EventArgs e)
         {
-            selectedDate = selectedDate.AddMonths(-1);
+            selectedDate = selectedDate.AddMonths(PreviousTimeInterval);
             updateCalendar();
         }
 
@@ -184,14 +194,14 @@ namespace Calendar
 
         private void SearchButton_Click(object sender, EventArgs e)
         {
-            if (MonthListBox.SelectedIndex != defaultSelectedListBoxIndex && YearListBox.SelectedIndex != defaultSelectedListBoxIndex)
+            if (MonthListBox.SelectedIndex != DefaultSelectedListBoxIndex && YearListBox.SelectedIndex != DefaultSelectedListBoxIndex)
             {
-                selectedDate = new DateTime(Int32.Parse(YearListBox.SelectedItem.ToString()), MonthListBox.SelectedIndex + gapBetweenIndexAndNumber, defaultDayOfMonth);
+                selectedDate = new DateTime(Int32.Parse(YearListBox.SelectedItem.ToString()), MonthListBox.SelectedIndex + GapBetweenIndexAndNumber, InitialDayOfMonth);
                 updateCalendar();
             }
             else
             {
-                MessageBox.Show("You must select a month and a year");
+                MessageBox.Show(ErrorMessage);
             }
         }
     }
